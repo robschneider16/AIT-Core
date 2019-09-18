@@ -42,16 +42,6 @@ def main():
           """
 
     arguments = OrderedDict({
-        '--port': {
-            'type'    : int,
-            'default' : ait.config.get('command.port', ait.DEFAULT_CMD_PORT),
-            'help'    : 'Port on which to send data'
-        },
-        '--host': {
-            'type'    : str,
-            'default' : "127.0.0.1",
-            'help'    : 'Host to which to send data'
-        },
         '--verbose': {
             'action'  : 'store_true',
             'default' : False,
@@ -73,11 +63,9 @@ def main():
 
     args = gds.arg_parse(arguments, description)
 
-    host     = args.host
-    port     = args.port
     verbose  = args.verbose
 
-    cmdApi  = api.CmdAPI(port, verbose=verbose)
+    cmdApi  = api.CmdAPI(verbose=verbose)
 
     cmdArgs = cmdApi.parseArgs(args.command, *args.arguments)
 

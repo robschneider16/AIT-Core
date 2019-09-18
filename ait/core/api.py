@@ -111,8 +111,8 @@ class CmdAPI(ZMQClient):
         self._pub_url  = ait.SERVER_DEFAULT_XPUB_URL
         self._cntxt    = zmq.Context()
         self._pub_sock = self._cntxt.socket(zmq.PUB)
-        self._pub_sock.connect(self._pub_url) # might have to replace('*', 'localhost') here
-
+        self._pub_sock.connect(self._pub_url.replace('*','localhost')) # might have to replace('*', 'localhost') here
+        self._topic    = 'cmd'
         self._cmddict  = cmddict
         self._verbose  = verbose
         #self._socket  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -155,8 +155,7 @@ class CmdAPI(ZMQClient):
             try:
                 #values = (self._host, self._port, str(cmdobj))
                 #log.command('Sending to %s:%d: %s' % values)
-                print "GOT HERE"
-                self._pub_sock.send("cmd", encoded)
+                self._pub_sock.send("%s %s" % (self._topic, encoded))
                 #self._socket.sendto(encoded, (self._host, self._port))
                 status = True
 
@@ -520,7 +519,7 @@ class Instrument (object):
             defn = tlmdict[ names[0] ]
 
         self._packets = PacketBuffers()
-        self._cmd     = CmdAPI(cmdport)
+        self._cmd     = CmdAPI()
 
         self._packets.create(defn.name)
         pktbuf        = self._packets[defn.name]
