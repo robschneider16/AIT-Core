@@ -42,6 +42,8 @@ import socket
 import time
 
 import ait.core
+import zmq.green as zmq
+from ait.core.server.client import ZMQClient
 from ait.core import cmd, gds, log, pcap, tlm, util
 
 class APIError (Exception):
@@ -91,24 +93,29 @@ class FalseWaitError (Exception):
 
 
 
-class CmdAPI:
+class CmdAPI(ZMQClient):
     """CmdAPI
 
-    Provides an API to send commands to your Instrument via User
-    Datagram Protocol (UDP) packets.
+    Provides an API to send commands to the ait server command output stream
+    via the ZMQ client
     """
-    def __init__ (self, destination, cmddict=None, verbose=False):
-        if type(destination) is int:
-            destination = ('127.0.0.1', destination)
+    def __init__ (self, cmddict=None, verbose=False):
+        #if type(destination) is int:
+        #    destination = ('127.0.0.1', destination)
 
         if cmddict is None:
             cmddict = cmd.getDefaultCmdDict()
 
-        self._host    = destination[0]
-        self._port    = destination[1]
-        self._cmddict = cmddict
-        self._verbose = verbose
-        self._socket  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #self._host    = destination[0]
+        #self._port    = destination[1]
+        self._pub_url  = ait.SERVER_DEFAULT_XPUB_URL
+        self._cntxt    = zmq.Context()
+        self._pub_sock = self._cntxt.socket(zmq.PUB)
+        self._pub_sock.connect(self._pub_url) # might have to replace('*', 'localhost') here
+
+        self._cmddict  = cmddict
+        self._verbose  = verbose
+        #self._socket  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         _def_cmd_hist = os.path.join(ait.config._ROOT_DIR, 'ait-cmdhist.pcap')
         self.CMD_HIST_FILE = ait.config.get('command.history.filename', _def_cmd_hist)
@@ -146,9 +153,11 @@ class CmdAPI:
                 gds.hexdump(encoded, preamble=cmdobj.name + ':' + pad)
 
             try:
-                values = (self._host, self._port, str(cmdobj))
-                log.command('Sending to %s:%d: %s' % values)
-                self._socket.sendto(encoded, (self._host, self._port))
+                #values = (self._host, self._port, str(cmdobj))
+                #log.command('Sending to %s:%d: %s' % values)
+                print "GOT HERE"
+                self._pub_sock.send("cmd", encoded)
+                #self._socket.sendto(encoded, (self._host, self._port))
                 status = True
 
                 with pcap.open(self.CMD_HIST_FILE, 'a') as output:
